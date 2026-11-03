@@ -30,3 +30,20 @@ No other must-fix found. The implementation matches the Tech design's tool contr
    - `sudo docker build --platform linux/amd64 -t kpn-mcp:review2 .` — succeeds; `docker inspect` confirms `Config.User = app` (non-root) and the `HEALTHCHECK` is defined with `curl -fsS http://localhost:8080/health`.
    - Ran the built image (`-p 18273:8080`, matching the Dockerfile's actual `EXPOSE 8080` / `MCP_HTTP_PORT=8080`, not the port assumed on the first attempt): `GET /health` → `200 {"status":"ok"}`; container health transitions to `healthy`; `POST /mcp` with no credential headers → `401 {"error":"missing_headers","missing":["X-Kpn-Client-Id","X-Kpn-Client-Secret"]}`; `POST /mcp` with both headers, `tools/list` only (no `initialize` first) → `200`, lists all 3 tools (`kpn_check_disturbance`, `kpn_check_internet_speed`, `kpn_check_sim_swap`) with their schemas — matches the Self-test's "Live contract check" row and this round's independent verification.
    - No new failures, no regressions. `ac.json` unchanged — the must-fix was a documentation-only defect, no test case's result or evidence changes.
+
+## Round 2 · 2026-11-03 · reviewed dev/PRD-21262 @ 480cc5f (base 351cff1)
+
+Verdict: approved
+
+### Fix verification (round 1 must-fix)
+
+1. `docs/tickets/PRD-21262.md:318` — confirmed on `480cc5f`: the line now reads `**Manual end-to-end with a real Agent client** (§10, a "must" requirement): not run — ...`. No Chinese character remains at that line or anywhere else in `PRD-21262.md`. The must-fix is resolved.
+2. `git diff 924cb9e..480cc5f` touches exactly two files, both under `docs/tickets/`: the Fixes subsection appended to `PRD-21262-review.md` and the one-line wording change in `PRD-21262.md:318`. No source code, tests, README, Dockerfile, or `ac.json` changed in this round — a docs-only fix, so the round-1 reviewer's independent gate results (pytest, mypy, docker build, live container contract checks, README connector-section diff) still apply unchanged to this commit; re-running them was not necessary to confirm correctness, but spot-checked anyway (below) since the dev leg's own re-run claim is the only thing to verify.
+3. Independently re-ran `grep -rnP '[\x{4e00}-\x{9fff}]' --exclude-dir=.git --exclude-dir=.venv .` on `480cc5f` myself: 2 hits, both inside `docs/tickets/PRD-21262-review.md` (line 9, the round-1 finding's verbatim quotation of the original defect string; line 25, this round's own Fixes subsection quoting it again) — a frozen-review-record audit trail, not a deliverable. `docs/tickets/PRD-21262.md` itself: 0 hits. Matches the dev leg's claim in the `[DEV]` stub exactly.
+4. `git merge-base --is-ancestor origin/main HEAD`: true — `main` is still at `351cff1`, unchanged since round 1; no re-sync needed before merging.
+
+### Findings
+
+None. No new diff beyond the single documented fix; nothing else to review.
+
+Status: frozen @ 480cc5f
