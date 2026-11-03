@@ -4,21 +4,27 @@
     "ac": "AC1",
     "text": "Given a mocked KPN disturbance-check response with one open broadband disturbance, When kpn_check_disturbance is called, Then has_disturbance is true and disturbances contains that entry with service/state/description.",
     "type": "auto",
-    "tests": ["tests/test_tools.py::test_check_disturbance_returns_known_disturbance"]
+    "tests": ["tests/test_tools.py::test_check_disturbance_returns_known_disturbance"],
+    "result": "pass",
+    "evidence": "uv run pytest -q -> tests/test_tools.py::test_check_disturbance_returns_known_disturbance PASSED (22 passed, 0 failed; run on dev/PRD-21262 @ d9a06a8, synced with main @ 351cff1)"
   },
   {
     "id": "TC2",
     "ac": "AC1",
     "text": "Given a mocked KPN disturbance-check response with all four arrays empty, When kpn_check_disturbance is called, Then the tool returns has_disturbance=false, disturbances=[] (not an error envelope).",
     "type": "auto",
-    "tests": ["tests/test_tools.py::test_check_disturbance_empty_is_not_error"]
+    "tests": ["tests/test_tools.py::test_check_disturbance_empty_is_not_error"],
+    "result": "pass",
+    "evidence": "uv run pytest -q -> tests/test_tools.py::test_check_disturbance_empty_is_not_error PASSED (same run as TC1)"
   },
   {
     "id": "TC3",
     "ac": "AC2",
     "text": "Given a mocked KPN speed-check response with FIBER at 500/500 Mbps, When kpn_check_internet_speed is called, Then technologies includes FIBER with download/upload=500 and max_download_mbps/max_upload_mbps=500.",
     "type": "auto",
-    "tests": ["tests/test_tools.py::test_check_internet_speed_returns_technologies"]
+    "tests": ["tests/test_tools.py::test_check_internet_speed_returns_technologies"],
+    "result": "pass",
+    "evidence": "uv run pytest -q -> tests/test_tools.py::test_check_internet_speed_returns_technologies PASSED (same run as TC1)"
   },
   {
     "id": "TC4",
@@ -32,41 +38,65 @@
     ],
     "expect": "No deserialization error; field names (technologies[].name/download/upload, max_bandwidth.up/down) match what the code expects",
     "result": "blocked",
-    "evidence": "needs a real vendor account — no KPN sandbox credentials available at design time; does not block development or INT publish per mcp-track.md 2.5"
+    "evidence": "needs a real vendor account -- no KPN sandbox credentials available at development time; does not block development or INT publish per mcp-track.md 2.5 / SOP \"no test account is still not a blocker\""
   },
   {
     "id": "TC5",
     "ac": "AC3",
     "text": "Given a mocked KPN SIM-swap response {latestSimChange: 2026-10-29T17:38:22.306Z}, When kpn_check_sim_swap is called, Then the tool result is {latest_sim_change: 2026-10-29T17:38:22.306Z}.",
     "type": "auto",
-    "tests": ["tests/test_tools.py::test_check_sim_swap_returns_latest_change"]
+    "tests": ["tests/test_tools.py::test_check_sim_swap_returns_latest_change"],
+    "result": "pass",
+    "evidence": "uv run pytest -q -> tests/test_tools.py::test_check_sim_swap_returns_latest_change PASSED (same run as TC1)"
   },
   {
     "id": "TC6",
     "ac": "AC3",
     "text": "Given a mocked KPN 404 SIM_SWAP.UNKNOWN_PHONE_NUMBER response, When kpn_check_sim_swap is called, Then the tool returns the error envelope with code=not_found, retryable=false.",
     "type": "auto",
-    "tests": ["tests/test_tools.py::test_check_sim_swap_unknown_number_is_not_found"]
+    "tests": ["tests/test_tools.py::test_check_sim_swap_unknown_number_is_not_found"],
+    "result": "pass",
+    "evidence": "uv run pytest -q -> tests/test_tools.py::test_check_sim_swap_unknown_number_is_not_found PASSED (same run as TC1)"
   },
   {
     "id": "TC7",
     "ac": "AC4",
     "text": "Given a POST /mcp request missing X-Kpn-Client-Secret, When it reaches the service, Then the response is 401 listing X-Kpn-Client-Secret as missing, and no outbound call to KPN (token exchange or API) was made.",
     "type": "auto",
-    "tests": ["tests/test_middleware.py::test_missing_credential_headers_returns_401"]
+    "tests": [
+      "tests/test_middleware.py::test_missing_credential_headers_returns_401",
+      "tests/test_middleware.py::test_missing_one_credential_header_lists_only_that_one"
+    ],
+    "result": "pass",
+    "evidence": "uv run pytest -q -> both tests PASSED (same run as TC1). Also verified live: `docker run` the built linux/amd64 image (kpn-mcp:dev) and `curl -X POST .../mcp` with no credential headers returned `401 {\"error\":\"missing_headers\",\"missing\":[\"X-Kpn-Client-Id\",\"X-Kpn-Client-Secret\"]}`; container logs show no outbound call was attempted before the 401."
   },
   {
     "id": "TC8",
     "ac": "AC5",
     "text": "Given two concurrent simulated requests with different client-id/secret pairs, When both call a tool at the same time, Then each request's ContextVar read returns only its own credentials and the token-cache lookups never cross tenants.",
     "type": "auto",
-    "tests": ["tests/test_middleware.py::test_concurrent_requests_do_not_leak_credentials"]
+    "tests": ["tests/test_middleware.py::test_concurrent_requests_do_not_leak_credentials"],
+    "result": "pass",
+    "evidence": "uv run pytest -q -> tests/test_middleware.py::test_concurrent_requests_do_not_leak_credentials PASSED (same run as TC1): two asyncio tasks synchronized on an asyncio.Barrier each read back only their own (client_id, client_secret) pair via client_factory()."
   },
   {
     "id": "TC9",
     "ac": "AC6",
     "text": "Given each documented KPN status/error code (400/401/403/404/409/429/500/503/504, plus a simulated connect timeout), When the corresponding tool call fails, Then the returned envelope's code and retryable match the mapping table in the tech design.",
     "type": "auto",
-    "tests": ["tests/test_tools.py::test_error_mapping_table"]
+    "tests": [
+      "tests/test_tools.py::test_error_mapping_table[400-invalid_argument-False]",
+      "tests/test_tools.py::test_error_mapping_table[401-unauthorized-False]",
+      "tests/test_tools.py::test_error_mapping_table[403-unauthorized-False]",
+      "tests/test_tools.py::test_error_mapping_table[404-not_found-False]",
+      "tests/test_tools.py::test_error_mapping_table[409-upstream_error-True]",
+      "tests/test_tools.py::test_error_mapping_table[429-rate_limited-True]",
+      "tests/test_tools.py::test_error_mapping_table[500-upstream_error-True]",
+      "tests/test_tools.py::test_error_mapping_table[503-upstream_error-True]",
+      "tests/test_tools.py::test_error_mapping_table[504-upstream_error-True]",
+      "tests/test_tools.py::test_error_mapping_connect_timeout"
+    ],
+    "result": "pass",
+    "evidence": "uv run pytest -q -> all 10 parametrized/standalone cases PASSED (same run as TC1): every status in the mapping table plus a simulated httpx.ConnectTimeout all resolve to the expected (code, retryable) pair."
   }
 ]
